@@ -14,18 +14,19 @@ Assume there will be ONLY ONE form
 form {
     min-width: 500px;
     margin: 20px 30px 10px 30px;
+    border: 1px solid #368;
+    border-radius: 5px;
+    padding: 0 15px;
 }
 
 
 .no-task-container{
     text-align: center;
-    border: solid 1px #888;
-    border-radius: 8px;
     padding: 30px 0;
 }
 
 .add-button-container {
-    margin-top: 50px;
+    margin-top: 0px;
 }
 .add-button-container button{
     float: right;
@@ -40,20 +41,34 @@ form {
 
 .task-item-container{
     display: block;
-    margin: 30px 10px;
+    margin: 35px 10px;
+    border-bottom: 1px dotted #ddd;
+    padding: 10px;
 }
+.task-item-container.completed{
+    background-color: #334;
+    color: #777;
+}
+.task-item-container.completed .task-title, .task-item-container.completed .task-description{
+    text-decoration: line-through;
+}
+
 .task-item-container .task-title, .task-item-container .task-description{
     display: inline-block;
 }
 .task-item-container .task-title{
     display: inline-block;
-    width: 180px;
+    width: 250px;
     font-size: 18px;
     font-weight: bold;
 }
 .task-item-container .task-description{
+    width: 600px;
     margin-right: 10px;
     font-size: 15px;
+}
+.task-item-container .task-item-buttons-container{
+    height: 50px;
 }
 .task-item-container button{
     float: right;

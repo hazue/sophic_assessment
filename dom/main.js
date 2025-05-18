@@ -12,6 +12,19 @@ function fnGenerateContainer_FormItem(strId, strPlaceholder){
     return elemFormItemContainer;
 }
 
+function fnToggleAddOrEditFormDisplay(){
+    console.log("toggle form display");
+    elemForm_AddEditTaskContainer = document.getElementsByClassName("add-edit-task-container")[0];
+
+    strCurrentVisibility = elemForm_AddEditTaskContainer.style.display;
+    if( strCurrentVisibility == '' || strCurrentVisibility == 'none'){
+        elemForm_AddEditTaskContainer.style.display = "block";
+    }else{
+        elemForm_AddEditTaskContainer.style.display = "none";
+    }
+    
+}
+
 function fnGenerateForm_AddOrEditTask(elemMainForm){
     elemFormContainer = fnCreateEmptyContainer("add-edit-task-container");
 
@@ -25,15 +38,20 @@ function fnGenerateForm_AddOrEditTask(elemMainForm){
         return false
     }
     
-    elemForm.appendChild(fnGenerateContainer_FormItem("task_title", "Task Title"));
-    elemForm.appendChild(fnGenerateContainer_FormItem("task_description", "Task Descriptions"));
+    formItem_TaskTitle = fnGenerateContainer_FormItem("task_title", "Task Title (MAX 30 Character)");
+    formItem_TaskTitle.children[0].maxLength = 30;
+    elemForm.appendChild(formItem_TaskTitle);
+
+    formItem_TaskDescription = fnGenerateContainer_FormItem("task_description", "Task Descriptions");
+    elemForm.appendChild(formItem_TaskDescription);
 
 
 
     elemContainer_AddOrCloseButtons = fnCreateEmptyContainer("add-or-close-container");
 
     elemButton_Add = fnCreateCommonButton({
-        className: "confirm-add-button",
+        id: "confirm_add_or_edit_button",
+        className: "confirm-add-or-edit-button",
         innerText: "Add",
         onclick: fnAddNewTask
     });
@@ -46,7 +64,12 @@ function fnGenerateForm_AddOrEditTask(elemMainForm){
     });
     elemContainer_AddOrCloseButtons.appendChild(elemButton_Close);
 
+    elemHiddenInput = document.createElement("input");
+    elemHiddenInput.id = "affected_task_id";
+    elemHiddenInput.type = "hidden";
+    elemHiddenInput.value = "-1";
 
+    elemForm.appendChild(elemHiddenInput);
 
     
     elemForm.appendChild(elemContainer_AddOrCloseButtons);
@@ -63,7 +86,7 @@ function fnGenerateButton_AddTask(elemMainForm){
     elemContainer = fnCreateEmptyContainer("add-button-container");
     
     elemContainer.appendChild(fnCreateCommonButton({
-        innerText: "Add Task",
+        innerText: "+ Add Task",
         onclick: fnToggleAddOrEditFormDisplay
     }));
 
@@ -72,7 +95,7 @@ function fnGenerateButton_AddTask(elemMainForm){
 }
 
 
-function fnGenerateContainer_TaskItem(jsonTaskData){
+function fnGenerateContainer_TaskItem(taskId, jsonTaskData){
     
     elemTaskItemContainer = fnCreateEmptyContainer("task-item-container");
 
@@ -87,46 +110,82 @@ function fnGenerateContainer_TaskItem(jsonTaskData){
     elemTaskItemContainer.appendChild(elemTaskDescription);
 
 
+
+    
+    elemButtonContainer = fnCreateEmptyContainer("task-item-buttons-container");
+
     elemButton_DeleteTask = fnCreateCommonButton({
         className: "btn-delete-task",
         innerText: "Delete",
         onclick: function(){
-            delete gl_task_db[jsonTaskData.taskId];
-            fnUpdateTaskDB();
+            delete gl_task_db[taskId];
+            fnUpdateTaskDBAndRefreshUI();
         }
     });
-    elemTaskItemContainer.appendChild(elemButton_DeleteTask);
+    elemButtonContainer.appendChild(elemButton_DeleteTask);
+
+    
+    if(jsonTaskData.status == task_status_completed){
+        elemTaskItemContainer.className += " completed";
+    }else{
+        elemButton_EditTask = fnCreateCommonButton({
+            className: "btn-edit-task",
+            innerText: "Edit",
+            onclick: function(){
+                elemInput_TaskTitle = document.getElementById('input_task_title');
+                elemInput_TaskTitle.value = jsonTaskData.title;
+                elemInput_TaskDescription = document.getElementById('input_task_description');
+                elemInput_TaskDescription.value = jsonTaskData.description;
+                elemInput_TaskId = document.getElementById('affected_task_id');
+                console.log("[DEBUG] jsonTaskData");
+                console.log(jsonTaskData);
+                elemInput_TaskId.value = taskId;
 
 
-    elemButton_EditTask = fnCreateCommonButton({
-        className: "btn-edit-task",
-        innerText: "Edit",
-        onclick: function(){
-            //TODO: Pop Up to edit
-            fnUpdateTaskDB();
-        }
-    });
-    elemTaskItemContainer.appendChild(elemButton_EditTask);
+                elemButton_ConfirmEditing = document.getElementById('confirm_add_or_edit_button');
+                elemButton_ConfirmEditing.innerText = "Edit";
+                elemButton_ConfirmEditing.onclick = fnEditExistingTask;
+
+                fnToggleAddOrEditFormDisplay();
+            }
+        });
+        elemButtonContainer.appendChild(elemButton_EditTask);
+        
+        elemButton_CompleteTask = fnCreateCommonButton({
+            className: "btn-complete-task",
+            innerText: "Complete",
+            onclick: function(){
+                gl_task_db[taskId]["status"] = task_status_completed;
+                fnUpdateTaskDBAndRefreshUI();
+            }
+        });
+        elemButtonContainer.appendChild(elemButton_CompleteTask);
+    }
     
 
-    elemButton_CompleteTask = fnCreateCommonButton({
-        className: "btn-complete-task",
-        innerText: "Complete",
-        onclick: function(){
-            gl_task_db[jsonTaskData.taskId]["status"] = task_status_completed;
-            fnUpdateTaskDB();
-        }
-    });
-    elemTaskItemContainer.appendChild(elemButton_CompleteTask);
-    
+
+
+    elemTaskItemContainer.appendChild(elemButtonContainer);
 
     return elemTaskItemContainer;
     
 }
 
-function fnGenerateTaskList(elemMainForm){
-    elemTaskListContainer = fnCreateEmptyContainer("task-list-container");
+function fnClearExistingTaskList(){
+    elemExistingContainer = document.getElementsByClassName("task-list-container");
+    if( elemExistingContainer.length > 0 ){
+        elemExistingContainer[0].remove();
+        return;
+    }
+    
+    elemExistingContainer = document.getElementsByClassName("no-task-container");
+    if( elemExistingContainer.length > 0 ){
+        elemExistingContainer[0].remove();
+        return;
+    }
+}
 
+function fnGenerateTaskList(elemMainForm){
     // NOTE: gl_task_db is global variable
     allTasksIDs = Object.keys(gl_task_db);
     if( allTasksIDs.length <= 0 ){
@@ -144,9 +203,11 @@ function fnGenerateTaskList(elemMainForm){
         return;
     }
 
+    elemTaskListContainer = fnCreateEmptyContainer("task-list-container");
+
     for(var i=0; i<allTasksIDs.length; i++){
         eachTaskID = allTasksIDs[i];
-        elemTaskListContainer.appendChild( fnGenerateContainer_TaskItem(eachTaskID) );
+        elemTaskListContainer.appendChild( fnGenerateContainer_TaskItem(eachTaskID, gl_task_db[eachTaskID]) );
     }
 
 

@@ -1,11 +1,3 @@
-//REQUIRED: all containers MUST HAVE a class name
-function fnCreateEmptyContainer(strClassName){
-    elemNewContainer = document.createElement("div");
-    elemNewContainer.className = strClassName;
-
-    return elemNewContainer;
-}
-
 
 function fnCreateCommonButton(domData){
     elemNewButton = document.createElement("button");
@@ -40,4 +32,12 @@ function fnCreateCommonButton(domData){
     }
 
     return elemNewButton;
+}
+
+//REQUIRED: all containers MUST HAVE a class name
+function fnCreateEmptyContainer(strClassName){
+    elemNewContainer = document.createElement("div");
+    elemNewContainer.className = strClassName;
+
+    return elemNewContainer;
 }

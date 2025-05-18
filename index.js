@@ -4,21 +4,16 @@ const task_status_completed = 1;
 let gl_task_db = {};
 
 
-function fnUpdateTaskDB(){
+function fnUpdateTaskDBAndRefreshUI(){
     localStorage.setItem(local_storage_key_name, JSON.stringify(gl_task_db));
-}
-
-function fnToggleAddOrEditFormDisplay(){
-    console.log("toggle form display");
-    elemForm_AddEditTaskContainer = document.getElementsByClassName("add-edit-task-container")[0];
-
-    strCurrentVisibility = elemForm_AddEditTaskContainer.style.display;
-    if( strCurrentVisibility == '' || strCurrentVisibility == 'none'){
-        elemForm_AddEditTaskContainer.style.display = "block";
-    }else{
-        elemForm_AddEditTaskContainer.style.display = "none";
-    }
     
+    fnClearExistingTaskList();
+
+    fnGenerateTaskList( document.getElementById("MainForm") );
+
+    setTimeout(function(){
+        window.location.reload();
+    }, 50);
 }
 
 function fnAddNewTask(){
@@ -30,16 +25,37 @@ function fnAddNewTask(){
 
 
     //WARNING: assume gl_task_db doesn't get reset
-    intNewId = gl_task_db.tasks.length+1;
+    intNewId = Object.keys(gl_task_db).length+1;
     gl_task_db[intNewId] = {
+        taskId: intNewId,
         title: strNewTaskTitle,
         description: strNewTaskDescription,
         status: task_status_new
     };
     
-    fnUpdateTaskDB();
+    fnUpdateTaskDBAndRefreshUI();
 
-    fnGenerateTaskList( document.getElementById("MainForm") );
+    fnToggleAddOrEditFormDisplay(); //Not needed since page will be reload?
+}
+
+function fnEditExistingTask(){
+    console.log("update existing task");
+
+    strUpdatedTaskTitle = document.getElementById("input_task_title").value;
+    strUpdatedTaskDescription = document.getElementById("input_task_description").value;
+    //Additional Validation??
+
+
+    elemInput_TaskId = document.getElementById('affected_task_id');
+    strTaskId = elemInput_TaskId.value;
+    gl_task_db[strTaskId] = {
+        title: strUpdatedTaskTitle,
+        description: strUpdatedTaskDescription
+    };
+    
+    fnUpdateTaskDBAndRefreshUI();
+
+    fnToggleAddOrEditFormDisplay(); //Not needed since page will be reload?
 }
 
 
